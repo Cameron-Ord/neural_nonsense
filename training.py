@@ -11,18 +11,20 @@ print()
 user_inputs = lists.get_inp()
 dagoth_ur_responses = lists.get_resp()
 
-max_sequence_length = 150
+max_sequence_length = 1000
 
 def vectorize_text():
     print("Vectorizing text..")
     print()
-    vectorized_text = layers.TextVectorization(max_tokens=300, output_mode='int', input_shape=(None,))
-    vectorized_text.adapt(user_inputs + dagoth_ur_responses)
-    inputs = vectorized_text(user_inputs)
-    outputs = vectorized_text(dagoth_ur_responses)
-    inputs = pad_sequences(inputs, maxlen=max_sequence_length, padding='post')
-    outputs = pad_sequences(outputs, maxlen=max_sequence_length, padding='post')
-    return inputs, outputs, vectorized_text
+    vectorized_text = layers.TextVectorization(max_tokens=1000, output_mode='int', input_shape=(None,))
+    tensor_input = tf.constant(user_inputs, dtype=tf.string)
+    tensor_output = tf.constant(dagoth_ur_responses, dtype=tf.string)
+    vectorized_text.adapt(tensor_input + tensor_output)
+    inputs = vectorized_text(tensor_input)
+    outputs = vectorized_text(tensor_output)
+    padded_inputs = pad_sequences(inputs, maxlen=max_sequence_length, padding='post')
+    padded_outputs = pad_sequences(outputs, maxlen=max_sequence_length, padding='post')
+    return padded_inputs, padded_outputs, vectorized_text
 
 def create_model(vt, inputs, outputs):
     print("Creating model..")
@@ -34,19 +36,20 @@ def create_model(vt, inputs, outputs):
         loaded_model = keras.models.load_model('dagoth_textbot_0.1.keras')
         summarize_model(loaded_model)
         compiled_model = compile_model(loaded_model)
-        train_model(inputs, outputs, compiled_model)
+        train_model(inputs, outputs, compiled_model, vt)
         
     except Exception as e:
         print('model does not exist, creating a new model')
         new_model = create_new(vocab_size)
         summarize_model(new_model)
         compiled_model = compile_model(new_model)
-        train_model(inputs, outputs, compiled_model)
+        train_model(inputs, outputs, compiled_model, vt)
 
 def create_new(vocab_size):
     model = keras.Sequential()
-    model.add(layers.Embedding(input_dim=vocab_size, output_dim=100, input_length=max_sequence_length))
+    model.add(layers.Embedding(input_dim=vocab_size, output_dim=200, input_length=max_sequence_length))
     model.add(layers.LSTM(units=64, return_sequences=True))
+    model.add(layers.Dense(units=vocab_size, activation='sigmoid'))
     model.add(layers.Dense(units=vocab_size, activation='softmax'))
     save_model(model)
     return model
@@ -62,17 +65,18 @@ def compile_model(sent_model):
 
 i = 0
 
-def train_model(inputs, outputs, compiled_model):
+def train_model(inputs, outputs, compiled_model, vt):
     global i
     print("Training")
     print()
     
-    compiled_model.fit(inputs, outputs, epochs=100, batch_size=64)
+    compiled_model.fit(inputs, outputs, epochs=100, batch_size=128)
     print("TRAINING INCREMENTER: ", i)
-    if i < 20:
+    if i < 100:
         i+=1
         save_model(compiled_model)
-        train_model(inputs, outputs, compiled_model)   
+        predict_response(vt, inputs)
+        train_model(inputs, outputs, compiled_model, vt)   
     
    
 
@@ -101,5 +105,5 @@ def predict_response(txt_layer, inputs):
 if __name__ == "__main__":
     rtr_inputs, rtr_outputs, vt = vectorize_text()
     create_model(vt, rtr_inputs, rtr_outputs)
-    predict_response(vt, rtr_inputs)
+    
 
