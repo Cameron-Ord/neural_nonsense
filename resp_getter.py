@@ -11,19 +11,19 @@ responses = lists.get_resp()
 
 def vectorize_input(user_input):
     print(user_input)
-    vt_input = layers.TextVectorization(max_tokens=1000, output_mode='int', input_shape=(None,))
+    vt_input = layers.TextVectorization(max_tokens=500, output_mode='int', input_shape=(None,))
     tensor_data = tf.constant(user_input, dtype=tf.string)
     vt_input.adapt(tensor_data)
     input = vt_input(tensor_data) 
-    input = pad_sequences(input, maxlen=1000, padding='post')
+    input = pad_sequences(input, maxlen=500, padding='post')
     return vt_input, input
 
 def vectorize_output():
-    vt_output = layers.TextVectorization(max_tokens=1000, output_mode='int', input_shape=(None,))
+    vt_output = layers.TextVectorization(max_tokens=500, output_mode='int', input_shape=(None,))
     tensor_data  = tf.constant(responses, dtype=tf.string)
     vt_output.adapt(tensor_data)
     output = vt_output(tensor_data) 
-    output = pad_sequences(output, maxlen=1000, padding='post')
+    output = pad_sequences(output, maxlen=500, padding='post')
     return vt_output, output
 
 def predict(input, vt_out):

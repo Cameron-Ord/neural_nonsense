@@ -11,12 +11,12 @@ print()
 user_inputs = lists.get_inp()
 dagoth_ur_responses = lists.get_resp()
 
-max_sequence_length = 1000
+max_sequence_length = 500
 
 def vectorize_text():
     print("Vectorizing text..")
     print()
-    vectorized_text = layers.TextVectorization(max_tokens=1000, output_mode='int', input_shape=(None,))
+    vectorized_text = layers.TextVectorization(max_tokens=500, output_mode='int', input_shape=(None,))
     tensor_input = tf.constant(user_inputs, dtype=tf.string)
     tensor_output = tf.constant(dagoth_ur_responses, dtype=tf.string)
     vectorized_text.adapt(tensor_input + tensor_output)
@@ -47,9 +47,8 @@ def create_model(vt, inputs, outputs):
 
 def create_new(vocab_size):
     model = keras.Sequential()
-    model.add(layers.Embedding(input_dim=vocab_size, output_dim=200, input_length=max_sequence_length))
+    model.add(layers.Embedding(input_dim=vocab_size, output_dim=75, input_length=max_sequence_length))
     model.add(layers.LSTM(units=64, return_sequences=True))
-    model.add(layers.Dense(units=vocab_size, activation='sigmoid'))
     model.add(layers.Dense(units=vocab_size, activation='softmax'))
     save_model(model)
     return model
@@ -70,7 +69,7 @@ def train_model(inputs, outputs, compiled_model, vt):
     print("Training")
     print()
     
-    compiled_model.fit(inputs, outputs, epochs=100, batch_size=128)
+    compiled_model.fit(inputs, outputs, epochs=100, batch_size=256)
     print("TRAINING INCREMENTER: ", i)
     if i < 100:
         i+=1
