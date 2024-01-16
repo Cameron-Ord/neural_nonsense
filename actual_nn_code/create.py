@@ -61,17 +61,40 @@ class Model_Init():
             .prefetch(tf.data.experimental.AUTOTUNE))
         print(train_dataset)
         self.create_model(train_dataset)
+    
+    def test_run(self, dataset, model_instance):
+        
+        for input_batch, target_batch in dataset.take(1):
+            batch_predictions = model_instance(input_batch)
+            sampled_indices = tf.random.categorical(batch_predictions[0], num_samples=1)
+            sampled_indices = tf.squeeze(sampled_indices, axis=-1).numpy()
+            print()
+            print(sampled_indices)
+            print("Input: \n", self.text_from_ids(input_batch[0]).numpy())
+            print("Next Char predictions: \n", self.text_from_ids(sampled_indices).numpy())
+            print()
+            print()
+            loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
+            example_batch_mean_loss = loss(target_batch, batch_predictions)
+            print("Prediction shape: ", batch_predictions.shape, "# (batch_size, sequence_length, vocab_size)")
+            print("Mean loss:        ", example_batch_mean_loss)
+            exponential_loss = tf.exp(example_batch_mean_loss).numpy()
+            print("Exponetial loss: ",exponential_loss)
+
 
     def create_model(self, dataset):
         vocab_size = len(self.ids_from_chars.get_vocabulary())
         embedding_dim = 256
         rnn_units = 1024 
-        model_instance = TextModel(vocab_size, embedding_dim, rnn_units)      
-        for input_batch, target_batch in dataset.take(1):
-            batch_predictions = model_instance(input_batch)
-            print(batch_predictions.shape, "# (batch_size, sequence_length, vocab_size)")
-        model_instance.summary()
-    
+        model_instance = TextModel(vocab_size, embedding_dim, rnn_units)         
+        self.test_run(dataset, model_instance)
+        loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
+        model_instance.compile(optimizer='adam', loss=loss)
+        self.train_model(dataset, model_instance)
+
+    def train_model(self, data, model):
+        EPOCHS = 10
+        history = model.fit(data, epochs=EPOCHS)
 
 if __name__=="__main__":
     init_instance = Model_Init()
