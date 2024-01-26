@@ -8,7 +8,8 @@ url = 'https://storage.googleapis.com/download.tensorflow.org/data/shakespeare.t
 
 class Model_Init():
     def __init__(self):
-        
+        print()
+        print()
         self.path_to_file = tf.keras.utils.get_file('shakespeare.txt', url)
         vocab, text = self.read_and_decode()
         ids = self.create_numeric_ids(vocab)
@@ -25,8 +26,25 @@ class Model_Init():
         return chars
 
     def split_input_target(self, sequence):
+        
+        
+        print("<---SEQ--->", "\n")
+        print("    ",sequence, "\n")
+        print("<---SEQ--->", "\n")
+        
         input_text = sequence[:-1]
         target_text = sequence[1:]
+
+       
+        print("<--INPUT_TEXT-->", "\n")
+        print("    ",input_text, "\n")
+        print("<--INPUT_TEXT-->", "\n")
+
+      
+        print("<--TARGET_TEXT-->", "\n")
+        print("    ",target_text, "\n")
+        print("<--TARGET_TEXT-->", "\n")
+    
         return input_text, target_text
 
     def create_targets(self, text, chars):
@@ -45,30 +63,32 @@ class Model_Init():
 
     def read_and_decode(self):
         text = open(self.path_to_file, 'rb').read().decode(encoding='utf-8')
-        print(f'Length of text: {len(text)} characters')
+        print(f'Length of text: {len(text)} characters', "\n")
         vocab = sorted(set(text))
-        print(f'{len(vocab)} unique characters')
+        print(f'{len(vocab)} unique characters', "\n")
         return vocab, text
 
     def create_batches(self, dataset):
         BATCH_SIZE = 64
         BUFFER_SIZE = 10000
-
+        print("DATASET PRIOR: \n", dataset ,"\n")
         train_dataset = (
             dataset
             .shuffle(BUFFER_SIZE)
             .batch(BATCH_SIZE, drop_remainder=True)
             .prefetch(tf.data.experimental.AUTOTUNE)
         )
-        print("load or create new model? l/n")
+        print("DATASET AFTER: \n", train_dataset, "\n")
+        print("load or create new model? l/n", "\n")
         
         chosen = False
         while(chosen != True):
             input_str = str(input())
             if(input_str == "l" or input_str == "n"):
+                print()
                 chosen = True
             else:
-                print("Enter either l for load or n for new")
+                print("Enter either l for load or n for new", "\n")
         
         if(input_str == "l"):
             self.load_model(train_dataset)
@@ -78,23 +98,22 @@ class Model_Init():
        
     
     def test_run(self, dataset, model_instance):
-        
-        for input_batch, target_batch in dataset.take(1):
+        for input_batch, target_batch in dataset.take(5):
             batch_predictions = model_instance(input_batch)
             sampled_indices = tf.random.categorical(batch_predictions[0], num_samples=1)
             sampled_indices = tf.squeeze(sampled_indices, axis=-1).numpy()
-            print()
-            print(sampled_indices)
-            print("Input: \n", self.text_from_ids(input_batch[0]).numpy())
+            print("----------------------------", "\n")
+            print("Input: \n", self.text_from_ids(input_batch[0]).numpy(), "\n")
             print("Next Char predictions: \n", self.text_from_ids(sampled_indices).numpy())
-            print()
-            print()
+            print("----------------------------", "\n")
             loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
             example_batch_mean_loss = loss(target_batch, batch_predictions)
-            print("Prediction shape: ", batch_predictions.shape, "# (batch_size, sequence_length, vocab_size)")
-            print("Mean loss:        ", example_batch_mean_loss)
+            print("----------------------------", "\n") 
+            print("Prediction shape: ", batch_predictions.shape, "# (batch_size, sequence_length, vocab_size)", "\n")
+            print("Mean loss:        ", example_batch_mean_loss, "\n")
             exponential_loss = tf.exp(example_batch_mean_loss).numpy()
-            print("Exponetial loss: ",exponential_loss)
+            print("Exponetial loss: ", exponential_loss, "\n")
+            print("----------------------------", "\n")
 
     def load_model(self, dataset):
         print("Loading existing model..")
@@ -117,7 +136,7 @@ class Model_Init():
         self.train_model(dataset, model_instance)
 
     def train_model(self, data, model):
-        EPOCHS = 1
+        EPOCHS = 3
         history = model.fit(data, epochs=EPOCHS)
         model.save("horatio_bot.keras")
 
