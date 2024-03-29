@@ -3,10 +3,10 @@ from tensorflow import strings
 from tensorflow import keras
 from keras import models
 import numpy as np
-
+url = 'https://storage.googleapis.com/download.tensorflow.org/data/shakespeare.txt'
 class Model_Start():
     def __init__(self):
-        self.path_to_file = 'dagoth.txt'
+        self.path_to_file = keras.utils.get_file('shakespeare.txt', url)
         vocab = self.read_and_decode()
         self.create_ids_from_chars(vocab)
         self.create_chars_from_ids()
@@ -24,8 +24,7 @@ class Model_Start():
         self.ids_from_chars = tf.keras.layers.StringLookup(vocabulary=list(vocab), mask_token=None) 
 
     def read_and_decode(self):
-        with open(self.path_to_file, 'r') as file:
-            text = file.read()
+        text = open(self.path_to_file, 'rb').read().decode(encoding='utf-8')
         print(f'Length of text: {len(text)} characters', "\n")
         vocab = sorted(set(text))
         print(f'{len(vocab)} unique characters', "\n")
@@ -43,17 +42,19 @@ class Model_Start():
             print("Your Message: ")
             seed_text = str(input())
             text = self.generate_text(seed_text)
+            print(text)
 
     def generate_text(self, seed_text):
-        input_batch = self.ids_from_chars(strings.unicode_split(seed_text, 'UTF-8'))
-        input_batch = tf.expand_dims(input_batch, 0)
-        predictions = self.model(input_batch)
-        print("Predictions Shape:", predictions.shape)
-        sampled_indices = tf.random.categorical(predictions[0], num_samples=1)
-        sampled_indices = tf.squeeze(sampled_indices, axis=-1).numpy()
-        print("Indices: ", sampled_indices)
-        print("Next char predictions: \n", self.text_from_ids(sampled_indices).numpy())
-            
+        responses = []
+        for _ in range(5):
+            input_batch = self.ids_from_chars(strings.unicode_split(seed_text, 'UTF-8'))
+            input_batch = tf.expand_dims(input_batch, axis=0)
+            predictions = self.model(input_batch)
+            sampled_indices = tf.random.categorical(predictions[0], num_samples=1)
+            sampled_indices = tf.squeeze(sampled_indices, axis=-1).numpy()
+            resp = self.text_from_ids(sampled_indices).numpy()
+            responses.append(resp)
+        return responses           
 
 if __name__=="__main__":
     init_instance = Model_Start()
