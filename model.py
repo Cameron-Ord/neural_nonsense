@@ -6,9 +6,12 @@ from keras import layers
 ##The instance of the class will now contain the model
 
 class TextModel(keras.Model):
-    def __init__(self, vocab_size, embedding_dim, rnn_units):
-        super().__init__(self)
+    def __init__(self, vocab_size, embedding_dim, rnn_units, **kwargs):
+        super().__init__(**kwargs)
         print("Creating model from constructor")
+        self.vocab_size = vocab_size
+        self.embedding_dim = embedding_dim
+        self.rnn_units = rnn_units
         self.embedding = layers.Embedding(vocab_size, embedding_dim)
         self.gru = layers.GRU(rnn_units, return_sequences=True, return_state=True)
         self.dense = layers.Dense(vocab_size)
@@ -18,8 +21,6 @@ class TextModel(keras.Model):
         ## Inputs is a tensor object
         x = inputs
         x = self.embedding(x, training=training)
-        if states is None:
-            states = self.gru.get_initial_state(x)
         x, states = self.gru(x, initial_state=states, training=training)
         x = self.dense(x, training=training)
 
@@ -27,7 +28,16 @@ class TextModel(keras.Model):
             return x, states
         else:
             return x 
-
-
-
-
+        
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'vocab_size': self.vocab_size,
+            'embedding_dim': self.embedding_dim,
+            'rnn_units': self.rnn_units
+        })
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
