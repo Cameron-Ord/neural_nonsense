@@ -3,12 +3,10 @@ from tensorflow import strings
 from tensorflow import keras
 from keras import models
 import numpy as np
-url = 'https://storage.googleapis.com/download.tensorflow.org/data/shakespeare.txt'
-
 
 class Model_Start():
     def __init__(self):
-        self.path_to_file = keras.utils.get_file('shakespeare.txt', url)
+        self.path_to_file = 'dagoth.txt'
         vocab = self.read_and_decode()
         self.create_ids_from_chars(vocab)
         self.create_chars_from_ids()
@@ -26,7 +24,8 @@ class Model_Start():
         self.ids_from_chars = tf.keras.layers.StringLookup(vocabulary=list(vocab), mask_token=None) 
 
     def read_and_decode(self):
-        text = open(self.path_to_file, 'rb').read().decode(encoding='utf-8')
+        with open(self.path_to_file, 'r') as file:
+            text = file.read()
         print(f'Length of text: {len(text)} characters', "\n")
         vocab = sorted(set(text))
         print(f'{len(vocab)} unique characters', "\n")

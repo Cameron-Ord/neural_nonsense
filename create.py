@@ -4,14 +4,10 @@ import numpy as np
 import os, copy
 import time
 from model import TextModel
-url = 'https://storage.googleapis.com/download.tensorflow.org/data/shakespeare.txt'
 
 class Model_Init():
     def __init__(self):
-        print()
-        print()
-
-        self.path_to_file = keras.utils.get_file('shakespeare.txt', url)
+        self.path_to_file = 'dagoth.txt'
         self.enter_nn_name()
         vocab, text = self.read_and_decode()
         self.create_chars_from_vocab(vocab)
@@ -53,15 +49,16 @@ class Model_Init():
         self.ids_from_chars = tf.keras.layers.StringLookup(vocabulary=list(vocab), mask_token=None) 
 
     def read_and_decode(self):
-        text = open(self.path_to_file, 'rb').read().decode(encoding='utf-8')
+        with open(self.path_to_file, 'r') as file:
+            text = file.read()
         print(f'Length of text: {len(text)} characters', "\n")
         vocab = sorted(set(text))
         print(f'{len(vocab)} unique characters', "\n")
         return vocab, text
 
     def create_batches(self, dataset):
-        BATCH_SIZE = 64
-        BUFFER_SIZE = 10000
+        BATCH_SIZE = 256
+        BUFFER_SIZE = 15000
         train_dataset = (
             dataset
             .shuffle(BUFFER_SIZE)
@@ -74,14 +71,14 @@ class Model_Init():
         print("Creating a new model..")
         vocab_size = len(self.ids_from_chars.get_vocabulary())
         embedding_dim = 256
-        rnn_units = 1024 
+        rnn_units = 512 
         model_instance = TextModel(vocab_size, embedding_dim, rnn_units)         
         loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
         model_instance.compile(optimizer='adam', loss=loss)
         self.train_model(dataset, model_instance)
 
     def train_model(self, data, model):
-        EPOCHS = 1
+        EPOCHS = 25
         history = model.fit(data, epochs=EPOCHS)
         model.save(self.name + '.keras')
 
