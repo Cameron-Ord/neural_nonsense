@@ -39,7 +39,7 @@ class Model_Init():
 
     def create_targets(self, text):
         print("Creating targets..\n\n", text)
-        seq_length = 250
+        seq_length = 100
         all_ids = self.ids_from_chars(tf.strings.unicode_split(text, 'UTF-8'))
         ids_dataset = tf.data.Dataset.from_tensor_slices(all_ids)
         sequences = ids_dataset.batch(seq_length+1, drop_remainder=True)
@@ -71,8 +71,7 @@ class Model_Init():
     def create_model(self, dataset):
         print("Creating a new model..")
         vocab_size = len(self.ids_from_chars.get_vocabulary())
-        print("VOCAB SIZE: \n", vocab_size)
-        embedding_dim = 256
+        embedding_dim = 512
         rnn_units = 1024
         model_instance = TextModel(vocab_size, embedding_dim, rnn_units)         
         loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -84,6 +83,26 @@ class Model_Init():
         history = model.fit(data, epochs=EPOCHS)
         model.summary()
         model.save(self.name + '.keras')
+        self.test_run(data, model)
+
+    def test_run(self, dataset, model_instance):
+        for input_batch, target_batch in dataset.take(1):
+            batch_predictions = model_instance(input_batch)
+            sampled_indices = tf.random.categorical(batch_predictions[0], num_samples=1)
+            sampled_indices = tf.squeeze(sampled_indices, axis=-1).numpy()
+            print()
+            print()
+            print("Input: \n", self.text_from_ids(input_batch[0]).numpy())
+            print()
+            print("Next Char predictions: \n", self.text_from_ids(sampled_indices).numpy())
+            print()
+            print()
+            loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
+            example_batch_mean_loss = loss(target_batch, batch_predictions)
+            print("Prediction shape: ", batch_predictions.shape, "# (batch_size, sequence_length, vocab_size)")
+            print("Mean loss:        ", example_batch_mean_loss)
+            exponential_loss = tf.exp(example_batch_mean_loss).numpy()
+            print("Exponetial loss: ",exponential_loss)
 
 
 if __name__=="__main__":
